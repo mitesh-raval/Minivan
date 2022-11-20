@@ -3,10 +3,10 @@ from distutils.core import setup
 
 setup(name='minivan',
       packages = ['minivan'],
-      version='2.0',
+      version='2.1',
       description='Minifier for vanilla JS and CSS file',
       url='https://github.com/mitesh-raval/Minivan',
-      download_url = 'https://github.com/mitesh-raval/Minivan/archive/refs/tags/2.0.tar.gz',
+      download_url = 'https://github.com/mitesh-raval/Minivan/archive/refs/tags/2.1.tar.gz',
       author='Mitesh Raval',
       author_email='mitesh@nasagram.com',
       keywords = ['minifier', 'minivan', 'minifier js', 'minifier css'],
