@@ -9,7 +9,8 @@ Hence the name is a reverse portmanteau of 'Vanilla' and 'Minifier'.
              see LIMITATIONS AND WARNINGS for more details !
 
 *******************************************
-python3 minivan.py -h will display usage.
+Usage info :
+python3 minivan.py -h 
 *******************************************
 
 *******************************************
@@ -26,19 +27,24 @@ LIMITATIONS AND WARNINGS :
 *******************************************
 While, the author has tested and used this quite well, it might not account for all the 
 possible caveats of code written in JS or CSS. 
+
 Following are supported for most common possibilities :
+
 1) Extra spaces before and after the line of code and any newlines or tabs are removed.
 
 2) Both single line comments with '//' and multiline comments with /* .... */ are removed.
 
 3) Inline comments are removed without affecting the code within a line, even if the comment
    is embedded within code statements. For e.g.
+      
       if( /\* some comment \*/ condition) ==> if(condition)
+      
    WARNING : However, multiple embedded comments within a single line of code are NOT handled.
+      
       For e.g.  if(/\* comment 1 \*/ condition) /\* comment 2 \*/  ==> SYNTAX error
 
 4) For single line else statements without curly braces, an extra space is added after the
-   keyword 'else' in javascript. So following are accounted for:
+   keyword 'else' in javascript. So following ARE accounted for:
 
     CASE A:   
     
@@ -60,14 +66,14 @@ Following are supported for most common possibilities :
                   
                 statement;
 
-5) Any lines with http:// or https:// as preserved AS IS.
+5) Any lines with http:// or https:// are preserved AS IS.
 
 6) Any lines with '/' operator in javascript are accurately curated of comments.
    
    For e.g.:
         
-        result = var1 / var2;  // some comment ==> result = var / var2;
+        result = var1 / var2;  // some comment ==> result = var1 / var2;
         
-        result = var1 / var2;  /\* some comment \*/ ==> result = var / var2;
+        result = var1 / var2;  /\* some comment \*/ ==> result = var1 / var2;
 
 *********************************************************************************************
