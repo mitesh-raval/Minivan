@@ -6,8 +6,8 @@ import argparse
 def RemoveCommentsAndMisc(inList):
     """
     RemoveCommentsAndMisc(inList):
-    Removes all lines making up multiline comments and puts extra space
-    before '+' if the line starts with '+'
+        * removes all lines making up multiline comments
+        * puts extra space before '+' symbol if the line starts with '+'
     """
     tempList = []
     dropLines = False
@@ -33,8 +33,9 @@ def RemoveCommentsAndMisc(inList):
 def RemoveInlineCommentsAndMisc(inStr):
     """
     RemoveInlineCommentsAndMisc(inStr) :
-    Removes all inline comments and ignores any code lines with a url string in it.
-    Also, fixes one line else statements without curly braces to have an extra space.
+        * removes all inline comments
+        * ignores any code lines with a url string in it
+        * fixes one line else statements without curly braces to have an extra space.
     e.g. some code // comment     ==>  some code
          some code /* comment */  ==>  some code
          urlStr = 'http[s]://blah'   // comment ==> unchanged
@@ -97,7 +98,7 @@ def main():
 
     with open(dest, "w") as f:
         f.write(minContent)
-        f.flush
+        f.flush()
 
 
 main()
