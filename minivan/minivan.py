@@ -9,7 +9,7 @@ def RemoveCommentsAndMisc(inList):
         * removes all lines making up multiline comments
         * puts extra space before '+' symbol if the line starts with '+'
     """
-    tempList = []
+    curatedList = []
     dropLines = False
     for line in inList:
         if dropLines:
@@ -25,9 +25,9 @@ def RemoveCommentsAndMisc(inList):
         elif line.startswith("/*") and not line.endswith("*/"):
             dropLines = True
         else:
-            tempList.append(line)
+            curatedList.append(line)
 
-    return tempList
+    return curatedList
 
 
 def RemoveInlineCommentsAndMisc(inStr):
@@ -66,39 +66,60 @@ def RemoveInlineCommentsAndMisc(inStr):
         postCommentStr = strTuples[2].rpartition("/")[2]
         retStr = "".join([preCommentStr, postCommentStr])
 
-    """ Account for one line else statements that do not have curly braces
-        by adding an extra space after spaces were stripped in a previous step  
     """
-    if "else" in retStr and "{" not in retStr:
+    Account for one line else statements that do not have curly braces
+    by adding an extra space after spaces were stripped in a previous step
+    """
+    if "else" == retStr:
         retStr = "".join([retStr, " "])
 
     return retStr
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Minify .js or .css file")
+def minify(args):
+
+    parser = argparse.ArgumentParser(description="Minify .js or .css files")
     parser.add_argument("source", help="(Relative) Path to source file e.g. script.js")
     parser.add_argument(
         "dest",
         help="(Relative) new location/file name \
         e.g. script.min.js.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     src = args.source
     dest = args.dest
+    fname = None
 
-    with open(src, "r") as f:
-        content = f.read()
+    try:
+        fname = src
+        with open(src, "r") as f:
+            content = f.read()
 
-    """ splitlines to remove all linebreaks before stripping whitespace and tabs """
-    linesList = list(map(str.strip, iter(content.splitlines())))
-    linesList = RemoveCommentsAndMisc(linesList)
-    linesList = list(map(RemoveInlineCommentsAndMisc, iter(linesList)))
-    minContent = "".join(linesList)
+        """ splitlines to remove all linebreaks before stripping whitespace and tabs """
+        linesList = list(map(str.strip, iter(content.splitlines())))
+        linesList = RemoveCommentsAndMisc(linesList)
+        linesList = list(map(RemoveInlineCommentsAndMisc, iter(linesList)))
+        minContent = "".join(linesList)
 
-    with open(dest, "w") as f:
-        f.write(minContent)
-        f.flush()
+        fname = dest
+        with open(dest, "w") as f:
+            f.write(minContent)
+            f.flush()
+
+    except Exception as e:
+        handle_file_exception(e, fname)
 
 
-main()
+def handle_file_exception(excp, fname):
+    if isinstance(excp, FileNotFoundError):
+        print(f"Error: {fname} not found.")
+    elif isinstance(excp, PermissionError):
+        print(f"Error: Permission denied when accessing {fname}.")
+    else:
+        print(f"An error occurred while processing {fname}: {excp}")
+
+
+if __name__ == "__main__":
+    import sys
+
+    minify(sys.argv[1:])
