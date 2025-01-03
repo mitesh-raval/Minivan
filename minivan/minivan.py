@@ -3,15 +3,24 @@
 import argparse
 
 
-def RemoveCommentsAndMisc(inList):
+def remove_block_comments(inList):
     """
-    RemoveCommentsAndMisc(inList):
+    remove_block_comments(inList):
         * removes all lines making up multiline comments
         * puts extra space before '+' symbol if the line starts with '+'
+        * preserves loud comments
     """
     curatedList = []
     dropLines = False
+    loudComment = False
+
     for line in inList:
+        if loudComment:
+            curatedList.append(line + "\n")
+            if line.endswith("*/"):
+                loudComment = False
+            continue
+
         if dropLines:
             if not line.endswith("*/"):
                 continue
@@ -20,7 +29,11 @@ def RemoveCommentsAndMisc(inList):
                 continue
         if line.startswith("+"):
             line = "".join([" ", line])
-        if line.startswith("/*") and line.endswith("*/") or line.startswith("//"):
+        if line.startswith("/*!"):
+            curatedList.append(line + "\n")
+            if not line.endswith("*/"):
+                loudComment = True
+        elif line.startswith("/*") and line.endswith("*/") or line.startswith("//"):
             continue
         elif line.startswith("/*") and not line.endswith("*/"):
             dropLines = True
@@ -30,50 +43,131 @@ def RemoveCommentsAndMisc(inList):
     return curatedList
 
 
-def RemoveInlineCommentsAndMisc(inStr):
+def minify_line(line, matching_char, within_comment, loud_comment):
     """
-    RemoveInlineCommentsAndMisc(inStr) :
-        * removes all inline comments
-        * ignores any code lines with a url string in it
+    Process a line character-wise and update flags or var as necessary to
+    handle multi-line scenarios
+        * removes all inline comments except those within quoted or format strings
         * fixes one line else statements without curly braces to have an extra space.
     e.g. some code // comment     ==>  some code
          some code /* comment */  ==>  some code
-         urlStr = 'http[s]://blah'   // comment ==> unchanged
-         urlStr = 'http[s]://blah'   /* comment */ ==> unchanged
+         "some string /* not a comment */ " ==> preserved as is
          else
             statement;      ==>  else statement;
     """
-    if "http://" in inStr or "https://" in inStr:
-        return inStr
-    retStr = inStr
-    if "//" in inStr:
-        retStr = ""
-        strTuples = inStr.partition("/")
-        # loop till // is found and not just the first /
-        while not strTuples[2].startswith("/"):
-            retStr = "".join([retStr, strTuples[0], strTuples[1]])
-            strTuples = strTuples[2].partition("/")
-        retStr = "".join([retStr, strTuples[0]])
-    elif "/*" in inStr:
-        retStr = ""
-        strTuples = inStr.partition("/")
-        # loop till /* is found and not just the first /
-        while not strTuples[2].startswith("*"):
-            retStr = "".join([retStr, strTuples[0], strTuples[1]])
-            strTuples = strTuples[2].partition("/")
-        preCommentStr = "".join([retStr, strTuples[0]])
-        # now partition from right to remove the comment
-        postCommentStr = strTuples[2].rpartition("/")[2]
-        retStr = "".join([preCommentStr, postCommentStr])
+    chars = tuple(line)
+    num_chars = len(chars)
+    curated_chars = []
+    start_comment = False
+    end_comment = False
+
+    for i in range(num_chars):
+        c = chars[i]
+        if matching_char is not None:
+            if c != matching_char:
+                curated_chars.append(c)
+            else:
+                matching_char = None
+                curated_chars.append(c)
+            # no further processing required
+            continue
+
+        # preserve loud comment whether it is start or end or within
+        if loud_comment:
+            curated_chars.append(c)
+
+        if start_comment:
+            # because '/*' is a 2 char sequence
+            # match case below will activate start_comment
+            # flag after a lookahead, yet the for loop is 1 char behind
+            within_comment = True
+            start_comment = False
+            continue
+
+        if end_comment:
+            # skip the next char '/', similar to start_comment
+            # processing, need to discard two char sequence '*/'
+            end_comment = False
+            loud_comment = False
+            continue
+
+        if within_comment:
+            next_index = i + 1
+            if next_index < num_chars:
+                if c == "*" and chars[next_index] == "/":
+                    within_comment = False
+                    end_comment = True
+                # skip c whether inside or at the end of a comment
+                continue
+            else:
+                # just processed last char, so break is fine
+                break
+
+        match c:
+            case "'":
+                matching_char = "'"
+                curated_chars.append(c)
+            case '"':
+                matching_char = '"'
+                curated_chars.append(c)
+            case "`":
+                matching_char = "`"
+                curated_chars.append(c)
+            case "/":
+                next_index = i + 1
+                if next_index < num_chars:
+                    next_char = chars[next_index]
+                    if next_char == "/":
+                        # single line comment, skip the rest of the line
+                        break
+                    elif next_char == "*":
+                        next_index = i + 2
+                        if next_index < num_chars:
+                            next_char = chars[next_index]
+                            if next_char == "!":
+                                # start of loud comment
+                                loud_comment = True
+                                # preserve loud comment
+                                curated_chars.append(c)
+                        # within a comment
+                        start_comment = True
+                        continue
+                # just a division operator or / at the end of a loud comment
+                curated_chars.append(c)
+            case _:
+                curated_chars.append(c)
+
+    curated_line = "".join(curated_chars)
 
     """
     Account for one line else statements that do not have curly braces
     by adding an extra space after spaces were stripped in a previous step
     """
-    if "else" == retStr:
-        retStr = "".join([retStr, " "])
+    if "else" == curated_line:
+        curated_line = "".join([curated_line, " "])
 
-    return retStr
+    # print(f"curated_line : {curated_line}, {within_comment} {matching_char}")
+    return curated_line, matching_char, within_comment, loud_comment
+
+
+def smart_strip(input_line):
+    # removes '\' used in multi-line quoted strings
+    return input_line.strip().strip("\\")
+
+
+def remove_inline_comments(lines_list):
+    curated_list = []
+    # skip_flag = False
+    find_char = None
+    within_comment = False
+    loud_comment = False
+    for line in lines_list:
+        clean_line, find_char, within_comment, loud_comment = minify_line(
+            line, find_char, within_comment, loud_comment
+        )
+        curated_list.append(clean_line)
+
+    return curated_list
 
 
 def minify(args):
@@ -95,10 +189,13 @@ def minify(args):
         with open(src, "r") as f:
             content = f.read()
 
-        """ splitlines to remove all linebreaks before stripping whitespace and tabs """
-        linesList = list(map(str.strip, iter(content.splitlines())))
-        linesList = RemoveCommentsAndMisc(linesList)
-        linesList = list(map(RemoveInlineCommentsAndMisc, iter(linesList)))
+        """
+        splitlines to remove all linebreaks before stripping whitespace, tabs
+        and continuation character '\'
+        """
+        linesList = list(map(smart_strip, iter(content.splitlines())))
+        linesList = remove_block_comments(linesList)
+        linesList = remove_inline_comments(linesList)
         minContent = "".join(linesList)
 
         fname = dest
