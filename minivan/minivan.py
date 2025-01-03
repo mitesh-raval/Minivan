@@ -3,6 +3,15 @@
 import argparse
 
 
+def handle_file_exception(excp, fname):
+    if isinstance(excp, FileNotFoundError):
+        print(f"Error: {fname} not found.")
+    elif isinstance(excp, PermissionError):
+        print(f"Error: Permission denied when accessing {fname}.")
+    else:
+        print(f"An error occurred while processing {fname}: {excp}")
+
+
 def remove_block_comments(inList):
     """
     remove_block_comments(inList):
@@ -170,20 +179,8 @@ def remove_inline_comments(lines_list):
     return curated_list
 
 
-def minify(args):
-
-    parser = argparse.ArgumentParser(description="Minify .js or .css files")
-    parser.add_argument("source", help="(Relative) Path to source file e.g. script.js")
-    parser.add_argument(
-        "dest",
-        help="(Relative) new location/file name \
-        e.g. script.min.js.",
-    )
-    args = parser.parse_args(args)
-    src = args.source
-    dest = args.dest
+def minify(src, dest):
     fname = None
-
     try:
         fname = src
         with open(src, "r") as f:
@@ -207,16 +204,22 @@ def minify(args):
         handle_file_exception(e, fname)
 
 
-def handle_file_exception(excp, fname):
-    if isinstance(excp, FileNotFoundError):
-        print(f"Error: {fname} not found.")
-    elif isinstance(excp, PermissionError):
-        print(f"Error: Permission denied when accessing {fname}.")
-    else:
-        print(f"An error occurred while processing {fname}: {excp}")
+def main(args):
+
+    parser = argparse.ArgumentParser(description="Minify .js or .css files")
+    parser.add_argument("source", help="(Relative) Path to source file e.g. script.js")
+    parser.add_argument(
+        "dest",
+        help="(Relative) new location/file name \
+        e.g. script.min.js.",
+    )
+    args = parser.parse_args(args)
+    src = args.source
+    dest = args.dest
+    minify(src, dest)
 
 
 if __name__ == "__main__":
     import sys
 
-    minify(sys.argv[1:])
+    main(sys.argv[1:])
