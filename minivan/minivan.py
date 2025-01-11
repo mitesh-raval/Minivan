@@ -1,9 +1,49 @@
 #!/usr/bin/env python3
+"""
+Minivan: A lightweight tool for minifying JavaScript and CSS files.
+
+This module provides functionality to minify JavaScript and CSS files by:
+- Removing comments (inline, block, and multi-line).
+- Ignoring comments within strings or template literals.
+- Preserving "loud" comments (/*! */).
+- Stripping unnecessary whitespace, tabs, and line breaks.
+- Retaining quoted strings and ensuring code correctness.
+
+Features:
+- Can be used as both a standalone script and an importable library.
+- Supports command-line arguments for file processing.
+- Efficient line-wise processing for performance.
+
+Functions:
+- main(args): Entry point for command-line usage.
+- minify(src: str, dest: str): Minifies the input file and saves it to the
+  specified destination.
+- remove_block_comments(lines_list: list[str]): Removes block comments
+  while preserving loud comments.
+- remove_inline_comments(lines_list: list[str]): Removes inline comments
+  while preserving quoted strings.
+- handle_file_exception(excp: Exception, fname: str): Handles file-related 
+  errors gracefully.
+
+Usage:
+- As a standalone script:
+    $ python minivan.py <source_file> <destination_file>
+- As an importable library:
+    from minivan import minify
+    minify("input.js", "output.min.js")
+"""
 
 import argparse
 
 
-def handle_file_exception(excp, fname):
+def handle_file_exception(excp: Exception, fname: str) -> None:
+    """
+    Handles file-related exceptions and prints an appropriate error message.
+
+    Args:
+        excp (Exception): The exception object raised during file operations.
+        fname (str): The name of the file being processed.
+    """
     if isinstance(excp, FileNotFoundError):
         print(f"Error: {fname} not found.")
     elif isinstance(excp, PermissionError):
@@ -12,50 +52,56 @@ def handle_file_exception(excp, fname):
         print(f"An error occurred while processing {fname}: {excp}")
 
 
-def remove_block_comments(inList):
+def remove_block_comments(lines_list: list[str]) -> list[str]:
     """
-    remove_block_comments(inList):
-        * removes all lines making up multiline comments
-        * puts extra space before '+' symbol if the line starts with '+'
-        * preserves loud comments
-    """
-    curatedList = []
-    dropLines = False
-    loudComment = False
+    Remove multi-line block comments while preserving loud comments.
+    Put extra space before '+' symbol if the line starts with '+'.
 
-    for line in inList:
-        if loudComment:
-            curatedList.append(line + "\n")
+    Args:
+        lines_list (list[str]): List of lines to process.
+
+    Returns:
+        list[str]: Lines with block comments removed and loud comments preserved.
+    """
+    curated_list = []
+    drop_lines = False
+    loud_comment = False
+
+    for line in lines_list:
+        if loud_comment:
+            curated_list.append(line + "\n")
             if line.endswith("*/"):
-                loudComment = False
+                loud_comment = False
             continue
 
-        if dropLines:
-            if not line.endswith("*/"):
-                continue
-            else:
-                dropLines = False
-                continue
+        if drop_lines:
+            if line.endswith("*/"):
+                drop_lines = False
+            continue
+
         if line.startswith("+"):
             line = "".join([" ", line])
+
         if line.startswith("/*!"):
-            curatedList.append(line + "\n")
+            curated_list.append(line + "\n")
             if not line.endswith("*/"):
-                loudComment = True
+                loud_comment = True
         elif line.startswith("/*") and line.endswith("*/") or line.startswith("//"):
             continue
         elif line.startswith("/*") and not line.endswith("*/"):
-            dropLines = True
+            drop_lines = True
         else:
-            curatedList.append(line)
+            curated_list.append(line)
 
-    return curatedList
+    return curated_list
 
 
-def minify_line(line, matching_char, within_comment, loud_comment):
+def minify_line(
+    line: str, matching_char: str | None, within_comment: bool, loud_comment: bool
+) -> tuple[str, str | None, bool, bool]:
     """
-    Process a line character-wise and update flags or var as necessary to
-    handle multi-line scenarios
+    Process a single line of code to remove inline comments while
+    handling multi-line scenarios.
         * removes all inline comments except those within quoted or format strings
         * fixes one line else statements without curly braces to have an extra space.
     e.g. some code // comment     ==>  some code
@@ -63,6 +109,19 @@ def minify_line(line, matching_char, within_comment, loud_comment):
          "some string /* not a comment */ " ==> preserved as is
          else
             statement;      ==>  else statement;
+
+    Args:
+        line (str): The line of code to process.
+        matching_char (str or None):
+            The quote character ('", ', or `` ` ``) being tracked for open strings.
+        within_comment (bool):
+            Tracks whether processing is within a multi-line comment.
+        loud_comment (bool):
+            Tracks whether processing is within a loud comment.
+
+    Returns:
+        tuple: (processed_line (str), matching_char (str or None),
+        within_comment (bool), loud_comment (bool)).
     """
     chars = tuple(line)
     num_chars = len(chars)
@@ -108,9 +167,8 @@ def minify_line(line, matching_char, within_comment, loud_comment):
                     end_comment = True
                 # skip c whether inside or at the end of a comment
                 continue
-            else:
-                # just processed last char, so break is fine
-                break
+            # just processed last char, so break is fine
+            break
 
         match c:
             case "'":
@@ -129,7 +187,7 @@ def minify_line(line, matching_char, within_comment, loud_comment):
                     if next_char == "/":
                         # single line comment, skip the rest of the line
                         break
-                    elif next_char == "*":
+                    if next_char == "*":
                         next_index = i + 2
                         if next_index < num_chars:
                             next_char = chars[next_index]
@@ -148,10 +206,8 @@ def minify_line(line, matching_char, within_comment, loud_comment):
 
     curated_line = "".join(curated_chars)
 
-    """
-    Account for one line else statements that do not have curly braces
-    by adding an extra space after spaces were stripped in a previous step
-    """
+    # Account for one line else statements that do not have curly braces
+    # by adding an extra space after spaces were stripped in a previous step
     if "else" == curated_line:
         curated_line = "".join([curated_line, " "])
 
@@ -159,12 +215,29 @@ def minify_line(line, matching_char, within_comment, loud_comment):
     return curated_line, matching_char, within_comment, loud_comment
 
 
-def smart_strip(input_line):
-    # removes '\' used in multi-line quoted strings
+def smart_strip(input_line: str) -> str:
+    """
+    Removes leading/trailing whitespace and continuation characters.
+
+    Args:
+        input_line (str): A single line of input.
+
+    Returns:
+        str: Line stripped of whitespace and trailing backslashes.
+    """
     return input_line.strip().strip("\\")
 
 
-def remove_inline_comments(lines_list):
+def remove_inline_comments(lines_list: list[str]) -> list[str]:
+    """
+    Removes inline comments while handling multi-line contexts and loud comments.
+
+    Args:
+        lines_list (list[str]): List of pre-processed lines.
+
+    Returns:
+        list[str]: Lines with inline comments removed, preserving loud comments.
+    """
     curated_list = []
     # skip_flag = False
     find_char = None
@@ -179,33 +252,43 @@ def remove_inline_comments(lines_list):
     return curated_list
 
 
-def minify(src, dest):
+def minify(src: str, dest: str) -> None:
+    """
+    Minifies a JavaScript or CSS file by removing comments and extra whitespace.
+
+    Args:
+        src (str): Path to the source file.
+        dest (str): Path to the destination file for the minified output.
+    """
     fname = None
     try:
         fname = src
-        with open(src, "r") as f:
+        with open(src, "r", encoding="utf-8") as f:
             content = f.read()
 
-        """
-        splitlines to remove all linebreaks before stripping whitespace, tabs
-        and continuation character '\'
-        """
-        linesList = list(map(smart_strip, iter(content.splitlines())))
-        linesList = remove_block_comments(linesList)
-        linesList = remove_inline_comments(linesList)
-        minContent = "".join(linesList)
+        # splitlines to remove all linebreaks before stripping whitespace, tabs
+        # and continuation character '\'
+        lines_list = list(map(smart_strip, iter(content.splitlines())))
+        lines_list = remove_block_comments(lines_list)
+        lines_list = remove_inline_comments(lines_list)
+        min_content = "".join(lines_list)
 
         fname = dest
-        with open(dest, "w") as f:
-            f.write(minContent)
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(min_content)
             f.flush()
 
     except Exception as e:
         handle_file_exception(e, fname)
 
 
-def main(args):
+def main(args: list[str]) -> None:
+    """
+    Parses command-line arguments and triggers the minification process.
 
+    Args:
+        args (list[str]): List of command-line arguments.
+    """
     parser = argparse.ArgumentParser(description="Minify .js or .css files")
     parser.add_argument("source", help="(Relative) Path to source file e.g. script.js")
     parser.add_argument(
