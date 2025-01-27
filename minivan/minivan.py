@@ -132,11 +132,9 @@ def minify_line(
     for i in range(num_chars):
         c = chars[i]
         if matching_char is not None:
-            if c != matching_char:
-                curated_chars.append(c)
-            else:
+            if c == matching_char:
                 matching_char = None
-                curated_chars.append(c)
+            curated_chars.append(c)
             # no further processing required
             continue
 
@@ -210,6 +208,13 @@ def minify_line(
     # by adding an extra space after spaces were stripped in a previous step
     if "else" == curated_line:
         curated_line = "".join([curated_line, " "])
+
+    # within backtick and if line ends with '<' within last 20 chars but does
+    # not contain closing '>' then add an extra space
+    if matching_char == "`":
+        tail = curated_line[-20:]
+        if "<" in tail and ">" not in tail:
+            curated_line += " "
 
     # print(f"curated_line : {curated_line}, {within_comment} {matching_char}")
     return curated_line, matching_char, within_comment, loud_comment
