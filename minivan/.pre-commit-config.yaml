@@ -6,4 +6,4 @@ repos:
     entry: ../../pyvenv/bin/pylint
     language: system
     types: [python]
-    args: [--disable=Basic, --rc=./../pylint/pylintrc]
+    args: [--rc=./../pylint/pylintrc]

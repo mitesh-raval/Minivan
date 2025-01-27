@@ -22,7 +22,7 @@ Functions:
   while preserving loud comments.
 - remove_inline_comments(lines_list: list[str]): Removes inline comments
   while preserving quoted strings.
-- handle_file_exception(excp: Exception, fname: str): Handles file-related 
+- handle_file_exception(excp: Exception, fname: str): Handles file-related
   errors gracefully.
 
 Usage:
