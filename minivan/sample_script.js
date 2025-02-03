@@ -27,3 +27,4 @@ function some_func(some_arg) {
 
     
 }
+//# ignore source map line

@@ -86,6 +86,9 @@ def remove_block_comments(lines_list: list[str]) -> list[str]:
             curated_list.append(line + "\n")
             if not line.endswith("*/"):
                 loud_comment = True
+        elif line.startswith("//#"):
+            curated_list.append(line + "\n")
+            continue
         elif line.startswith("/*") and line.endswith("*/") or line.startswith("//"):
             continue
         elif line.startswith("/*") and not line.endswith("*/"):
@@ -123,6 +126,10 @@ def minify_line(
         tuple: (processed_line (str), matching_char (str or None),
         within_comment (bool), loud_comment (bool)).
     """
+    if line.startswith("//#"):
+        curated_line = "\n" + line
+        return curated_line, matching_char, within_comment, loud_comment
+
     chars = tuple(line)
     num_chars = len(chars)
     curated_chars = []
