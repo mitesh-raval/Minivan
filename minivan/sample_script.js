@@ -9,7 +9,7 @@
 */
 
 function some_func(some_arg) {
-    urlStr = 'http://www.example.com';
+    urlStr = /* comment 1 */ 'http://www.example.com'; /* comment 2 */
     urlStr = 'https://www.example.com';
     console.log('test');  /* another 'hello
     world" multi line comment */
@@ -24,7 +24,5 @@ function some_func(some_arg) {
     var s = ' "Hello" world \
              second hello world /* some not a comment \
              continued to the next line */ ';
-
-    
 }
 //# ignore source map line

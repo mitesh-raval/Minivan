@@ -1,29 +1,43 @@
-*********************************************************************************************
+*******************************************
 # Minivan README
-*********************************************************************************************
+*******************************************
 
 A simple minifier script written using python3 for minifying vanilla javascript and css file.
 Hence the name is a reverse portmanteau of 'Vanilla' and 'Minifier'.
 
-   WARNING : Multiple embedded comments within a single line of code are NOT handled. Please
-             see LIMITATIONS AND WARNINGS for more details !
+Requires: Python >= 3.10
 
 *******************************************
 Usage info :
-python3 minivan.py -h 
 *******************************************
+From CLI :
+   python3 minivan.py -h 
+
+Importing as a module in a python script:
+   import minivan
+
+   def some_func():
+      minivan.minify(src_file, dest_file)
+
 
 *******************************************
 Purpose :
 *******************************************
 Especially useful for developers not using any frameworks and just needing a simple minifier
 for vanilla JS and CSS files without any other complex features or bundling etc. This script 
-only works on one file at a time, but a shell script can be used to automate the task for 
+works on one file at a time, but a shell script can be used to automate the task for 
 multiple files. That is out of scope for this minifier, as each developer might have 
 different dir structures etc.
 
+
 *******************************************
-LIMITATIONS AND WARNINGS :
+LIMITATIONS :
+*******************************************
+- Variable names or function names are not shortened in the current version.
+
+
+*******************************************
+NOTES :
 *******************************************
 While, the author has tested and used this quite well, it might not account for all the 
 possible caveats of code written in JS or CSS. 
@@ -39,10 +53,6 @@ Following are supported for most common possibilities :
       
       if( /\* some comment \*/ condition) ==> if(condition)
       
-   WARNING : However, multiple embedded comments within a single line of code are NOT handled.
-      
-      For e.g.  if(/\* comment 1 \*/ condition) /\* comment 2 \*/  ==> SYNTAX error
-
 4) For single line else statements without curly braces, an extra space is added after the
    keyword 'else' in javascript. So following ARE accounted for:
 
@@ -66,9 +76,7 @@ Following are supported for most common possibilities :
                   
                 statement;
 
-5) Any lines with http:// or https:// are preserved AS IS.
-
-6) Any lines with '/' operator in javascript are accurately curated of comments.
+5) Any lines with '/' operator in javascript are accurately curated of comments.
    
    For e.g.:
         
