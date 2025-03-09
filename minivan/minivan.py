@@ -125,6 +125,8 @@ def minify_line(
             Tracks whether processing is within a multi-line comment.
         loud_comment (bool):
             Tracks whether processing is within a loud comment.
+        ext (str):
+            File ext (js,css,html etc) for conditional processing.
 
     Returns:
         tuple: (processed_line (str), matching_char (str or None),
