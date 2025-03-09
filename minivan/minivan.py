@@ -252,6 +252,7 @@ def remove_inline_comments(lines_list: list[str], ext: str) -> list[str]:
 
     Args:
         lines_list (list[str]): List of pre-processed lines.
+        ext (str): File ext (js,css,html etc) for conditional processing.
 
     Returns:
         list[str]: Lines with inline comments removed, preserving loud comments.
