@@ -100,7 +100,11 @@ def remove_block_comments(lines_list: list[str]) -> list[str]:
 
 
 def minify_line(
-    line: str, matching_char: str | None, within_comment: bool, loud_comment: bool
+    line: str,
+    matching_char: str | None,
+    within_comment: bool,
+    loud_comment: bool,
+    ext: str,
 ) -> tuple[str, str | None, bool, bool]:
     """
     Process a single line of code to remove inline comments while
@@ -216,14 +220,14 @@ def minify_line(
     if "else" == curated_line:
         curated_line = "".join([curated_line, " "])
 
-    # within backtick and if line ends with '<' within last 20 chars but does
-    # not contain closing '>' then add an extra space
-    if matching_char == "`":
+    # within backtick or html/tpl files and if line ends with '<' within last 20 chars
+    # but does not contain closing '>' then add an extra space
+    if matching_char == "`" or ext == "html" or ext == "tpl":
         tail = curated_line[-20:]
-        if "<" in tail and ">" not in tail:
-            curated_line += " "
+        if "<" in tail:
+            if tail.rfind("<") > tail.rfind(">"):
+                curated_line += " "
 
-    # print(f"curated_line : {curated_line}, {within_comment} {matching_char}")
     return curated_line, matching_char, within_comment, loud_comment
 
 
@@ -240,7 +244,7 @@ def smart_strip(input_line: str) -> str:
     return input_line.strip().strip("\\")
 
 
-def remove_inline_comments(lines_list: list[str]) -> list[str]:
+def remove_inline_comments(lines_list: list[str], ext: str) -> list[str]:
     """
     Removes inline comments while handling multi-line contexts and loud comments.
 
@@ -257,7 +261,7 @@ def remove_inline_comments(lines_list: list[str]) -> list[str]:
     loud_comment = False
     for line in lines_list:
         clean_line, find_char, within_comment, loud_comment = minify_line(
-            line, find_char, within_comment, loud_comment
+            line, find_char, within_comment, loud_comment, ext
         )
         curated_list.append(clean_line)
 
@@ -275,6 +279,7 @@ def minify(src: str, dest: str) -> None:
     fname = None
     try:
         fname = src
+        ext = fname.lower().split(".").pop()
         with open(src, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -282,7 +287,7 @@ def minify(src: str, dest: str) -> None:
         # and continuation character '\'
         lines_list = list(map(smart_strip, iter(content.splitlines())))
         lines_list = remove_block_comments(lines_list)
-        lines_list = remove_inline_comments(lines_list)
+        lines_list = remove_inline_comments(lines_list, ext)
         min_content = "".join(lines_list)
 
         fname = dest
@@ -311,6 +316,7 @@ def main(args: list[str]) -> None:
     args = parser.parse_args(args)
     src = args.source
     dest = args.dest
+
     minify(src, dest)
 
 

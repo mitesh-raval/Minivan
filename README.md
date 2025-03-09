@@ -8,7 +8,7 @@ Hence the name is a reverse portmanteau of 'Vanilla' and 'Minifier'.
 Requires: Python >= 3.10
 
 *******************************************
-Usage info :
+Usage Info :
 *******************************************
 From CLI :
    python3 minivan.py -h 
@@ -24,10 +24,13 @@ Importing as a module in a python script:
 Purpose :
 *******************************************
 Especially useful for developers not using any frameworks and just needing a simple minifier
-for vanilla JS and CSS files without any other complex features or bundling etc. This script 
-works on one file at a time, but a shell script can be used to automate the task for 
-multiple files. That is out of scope for this minifier, as each developer might have 
-different dir structures etc.
+for vanilla JS / CSS / HTML files without any other complex features or bundling etc. While this 
+python script works on one file at a time, there are two ways to automate the minification 
+of multiple files:
+
+1) A shell script can be used to automate the task for multiple files
+
+2) A python script that imports it as a library (see Usage Info above for more details)
 
 
 *******************************************
